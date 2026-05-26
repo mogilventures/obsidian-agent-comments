@@ -16,8 +16,8 @@
 - [x] CodeMirror 6 decorations for highlighted comment ranges.
 - [x] Consent prompt on first use.
 - [x] Unit tests for mention parser and provider router.
-- [x] CI workflow (test + build on every push).
-- [x] Release workflow (artifacts on version tags).
+- [ ] CI workflow (test + build on every push) — deferred from PR #1 because current GitHub OAuth lacks `workflow` scope.
+- [ ] Release workflow (artifacts on version tags) — deferred from PR #1 because current GitHub OAuth lacks `workflow` scope.
 - [x] Public repo hygiene: MIT license, SECURITY, CONTRIBUTING, CHANGELOG, CODE_OF_CONDUCT, CODEOWNERS.
 - [x] Provider contract and security model docs.
 
