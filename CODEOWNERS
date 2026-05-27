@@ -1,0 +1,6 @@
+# CODEOWNERS
+# Default owner for all files in this repository.
+# GitHub requires valid GitHub usernames here.
+# Replace @nmogil with the actual GitHub handle for the Mogil Ventures maintainer.
+
+* @nmogil

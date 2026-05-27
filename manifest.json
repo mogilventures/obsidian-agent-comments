@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-agent-comments",
+  "name": "Agent Comments",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Inline AI-assisted comment threads. Tag @Hermes, @Claude, or @Codex on selected text and receive threaded replies with suggested patches.",
+  "author": "Mogil Ventures",
+  "authorUrl": "https://github.com/mogilventures",
+  "isDesktopOnly": true
+}
