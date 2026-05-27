@@ -23,6 +23,8 @@
 
 ## Near-term — v0.2.x
 
+- [ ] Selection-first comment UX: add **Add Agent Comment** to the right-click context menu when text is selected in Live Preview/source mode.
+- [ ] Reading View comment UX: support selecting rendered text and adding a comment without using the command palette; use quote-based anchoring with an ambiguity fallback when rendered text cannot be mapped cleanly to Markdown source offsets.
 - [ ] Hermes provider: poll-on-interval rather than manual refresh; configurable poll delay.
 - [ ] Anchor re-anchoring: exact quote search near previous offset on file open.
 - [ ] `lost_anchor` indicator and manual reattach command.
