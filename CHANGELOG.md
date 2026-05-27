@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Right-sidebar thread panel with per-thread status, messages, and apply/reject controls.
 - Explicit consent prompt before any note content is sent to a provider.
 - Unit tests for mention parser and provider router (Jest + ts-jest).
-- CI workflow: `npm ci`, `npm test`, `npm run build`.
-- Release workflow: builds and uploads `main.js`, `manifest.json`, `styles.css` on version tags.
 - Public repo docs: README, LICENSE (MIT), SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CODEOWNERS, docs/provider-contract.md, docs/security-model.md, docs/roadmap.md.
+- Developer-alpha release statement for `v0.1.0-alpha.1`.
+
+### Deferred
+
+- CI workflow and release workflow are deferred until GitHub auth is refreshed with `workflow` scope.
