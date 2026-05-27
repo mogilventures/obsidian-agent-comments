@@ -60,12 +60,13 @@ export default class AgentCommentsPlugin extends Plugin {
     this.addCommand({
       id: 'add-agent-comment',
       name: 'Add Agent Comment',
-      editorCallback: (editor: Editor, view: MarkdownView) => {
-        if (!view.file) {
-          new Notice('No active file');
+      callback: () => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!view?.file) {
+          new Notice('Open a Markdown note first');
           return;
         }
-        this.handleAddComment(editor, view.file);
+        this.handleAddComment(view.editor, view.file);
       },
     });
 
@@ -80,9 +81,10 @@ export default class AgentCommentsPlugin extends Plugin {
     this.addCommand({
       id: 'apply-pending-patch',
       name: 'Apply Pending Patch',
-      editorCallback: async (editor: Editor, view: MarkdownView) => {
-        if (!view.file) {
-          new Notice('No active file');
+      callback: async () => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!view?.file) {
+          new Notice('Open a Markdown note first');
           return;
         }
         const threads = await this.threadStore.listThreadsForFile(view.file.path);
