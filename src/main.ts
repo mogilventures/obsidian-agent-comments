@@ -3,8 +3,9 @@
  * Registers commands, the sidebar view, decoration extension, and settings tab.
  */
 
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
+import { App, Editor, MarkdownView, Menu, Modal, Notice, Plugin, TFile } from 'obsidian';
 import type { AgentProvider, PluginSettings, ProviderSettings } from './types';
+import { resolveQuoteToOffsets } from './quote-anchor';
 import { AgentThread, SuggestedPatch } from './types';
 import { ThreadStore } from './thread-store';
 import { AgentCommentsSidebar, VIEW_TYPE } from './sidebar-view';
@@ -121,6 +122,67 @@ export default class AgentCommentsPlugin extends Plugin {
         this.refreshSidebar();
       })
     );
+
+    // ── Selection-first comment entry points ───────────────────
+    // Primary UX: select text, right-click, "Add Agent Comment".
+    // The command palette commands above remain as a fallback.
+
+    // Live Preview / source mode: the editor context menu fires with the
+    // active editor and file info. Only offer the item when text is selected.
+    this.registerEvent(
+      this.app.workspace.on('editor-menu', (menu, editor, info) => {
+        const selection = editor.getSelection();
+        if (!selection || !selection.trim()) return;
+        const file = info.file;
+        if (!file) return;
+        menu.addItem((item) =>
+          item
+            .setTitle('Add Agent Comment')
+            .setIcon('message-square')
+            .onClick(() => {
+              void this.handleAddComment(editor, file);
+            })
+        );
+      })
+    );
+
+    // Reading View: no editor fires editor-menu, so listen for right-clicks on
+    // rendered preview content and offer the same action via a quote anchor.
+    this.registerReadingViewContextMenu();
+  }
+
+  /**
+   * Add an "Add Agent Comment" right-click item when the user has selected
+   * rendered text inside the active note's Reading View. Anchoring is resolved
+   * later by exact quote search (see handleAddCommentFromReadingView).
+   */
+  private registerReadingViewContextMenu(): void {
+    this.registerDomEvent(document, 'contextmenu', (evt: MouseEvent) => {
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (!view?.file || view.getMode() !== 'preview') return;
+
+      // Ensure the right-click landed on rendered preview content belonging to
+      // the active view (not the sidebar, a hover popover, or another leaf).
+      const target = evt.target as HTMLElement | null;
+      const previewEl = target?.closest('.markdown-preview-view');
+      if (!previewEl || !view.containerEl.contains(previewEl)) return;
+
+      const selection = window.getSelection()?.toString().trim();
+      if (!selection) return;
+
+      const file = view.file;
+      const menu = new Menu();
+      menu.addItem((item) =>
+        item
+          .setTitle('Add Agent Comment')
+          .setIcon('message-square')
+          .onClick(() => {
+            void this.handleAddCommentFromReadingView(file, selection);
+          })
+      );
+      menu.showAtMouseEvent(evt);
+      evt.preventDefault();
+    });
   }
 
   async onunload(): Promise<void> {
@@ -205,11 +267,8 @@ export default class AgentCommentsPlugin extends Plugin {
   }
 
   /**
-   * Open the Add Comment modal. On submit:
-   * 1. Create thread (open status), save immediately.
-   * 2. If no routed provider or provider not configured → leave as open, notice.
-   * 3. If consent not yet given → show ConsentModal; on accept save consent + submit.
-   * 4. If provider configured and consent given → transition open→pending, submit to bridge.
+   * Add a comment from an active editor (Live Preview/source). Reads the exact
+   * source offsets of the current selection and hands off to the shared modal.
    */
   async handleAddComment(editor: Editor, file: TFile): Promise<void> {
     const selection = editor.getSelection();
@@ -224,6 +283,66 @@ export default class AgentCommentsPlugin extends Plugin {
     const startOffset = editor.posToOffset(from);
     const endOffset = editor.posToOffset(to);
 
+    this.openAddCommentModal(file, content, selection, startOffset, endOffset);
+  }
+
+  /**
+   * Add a comment from Reading View, where there is no editor to read offsets
+   * from. Rendered HTML cannot be mapped cleanly to Markdown source offsets, so
+   * we re-locate the selected text by exact search in the source file.
+   *
+   * Only an unambiguous (single) match is anchored. Zero or multiple matches
+   * are surfaced to the user — we never silently pick among duplicates.
+   */
+  async handleAddCommentFromReadingView(file: TFile, selection: string): Promise<void> {
+    const quote = selection.trim();
+    if (!quote) {
+      new Notice('Select some text first');
+      return;
+    }
+
+    const content = await this.app.vault.read(file);
+    const resolution = resolveQuoteToOffsets(content, quote);
+
+    if (resolution.status === 'not-found') {
+      new Notice(
+        'Could not find the selected text in the note source. Try selecting in Live Preview or source mode.'
+      );
+      return;
+    }
+
+    if (resolution.status === 'duplicate') {
+      new Notice(
+        `Selected text appears ${resolution.count} times — cannot anchor unambiguously. ` +
+          'Switch to Live Preview/source mode, or select a longer, more unique passage.'
+      );
+      return;
+    }
+
+    this.openAddCommentModal(
+      file,
+      content,
+      quote,
+      resolution.startOffset,
+      resolution.endOffset
+    );
+  }
+
+  /**
+   * Open the Add Comment modal for a resolved anchor range. Used by both the
+   * editor (Live Preview/source) and Reading View entry points. On submit:
+   * 1. Create thread (open status), save immediately.
+   * 2. If no routed provider or provider not configured → leave as open, notice.
+   * 3. If consent not yet given → show ConsentModal; on accept save consent + submit.
+   * 4. If provider configured and consent given → transition open→pending, submit to bridge.
+   */
+  private openAddCommentModal(
+    file: TFile,
+    content: string,
+    quote: string,
+    startOffset: number,
+    endOffset: number
+  ): void {
     const prefix = content.slice(Math.max(0, startOffset - 100), startOffset);
     const suffix = content.slice(endOffset, Math.min(content.length, endOffset + 100));
 
@@ -234,7 +353,7 @@ export default class AgentCommentsPlugin extends Plugin {
         id,
         file: file.path,
         anchor: {
-          quote: selection,
+          quote,
           prefix,
           suffix,
           startOffset,

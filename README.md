@@ -2,13 +2,14 @@
 
 Inline AI-assisted comment threads for [Obsidian](https://obsidian.md). Select text in any Markdown note, add a comment, tag `@Hermes`, `@Claude`, or `@Codex`, and receive a threaded reply with a suggested patch — all reviewed and applied by you.
 
-> **Status: MVP (v0.1.0)** — Desktop only, Live Preview mode, file-based Hermes bridge, Claude Code and Codex provider stubs. Not yet in the Obsidian community plugin directory; install manually from a GitHub release.
+> **Status: MVP (v0.1.0)** — Desktop only; select-and-right-click in Live Preview, source mode, and Reading View; file-based Hermes bridge, Claude Code and Codex provider stubs. Not yet in the Obsidian community plugin directory; install manually from a GitHub release.
 
 ---
 
 ## Features
 
-- Select text and run **Add Agent Comment** to anchor a comment to any range.
+- Select text and right-click **Add Agent Comment** to anchor a comment to any range (the command palette command is also available as a fallback).
+- Works in Live Preview, source mode, and Reading View. In Reading View the selected text is re-located by exact match in the source — if it appears zero or multiple times the plugin asks you to switch to Live Preview/source mode or select a more unique passage rather than guessing.
 - Tag mentions to route to configured providers: `@Hermes`/`@Steve`, `@Claude`, `@Codex`.
 - Right-sidebar thread panel shows all threads for the current note.
 - Provider returns a reply and an optional `replace` patch.
@@ -61,6 +62,15 @@ See [`docs/security-model.md`](docs/security-model.md) for the full threat model
 2. Copy all three files into `.obsidian/plugins/obsidian-agent-comments/` inside your vault.
 3. In Obsidian → Settings → Community Plugins, enable **Agent Comments**.
 4. Configure at least one provider in the plugin settings.
+
+## Usage
+
+1. Select text in a note.
+2. Right-click the selection and choose **Add Agent Comment**. (No selection, no menu item — and the **Add Agent Comment** command in the palette still works as a fallback.)
+3. Write your comment, tagging `@Hermes`/`@Steve`, `@Claude`, or `@Codex` to route it to a provider.
+4. The thread appears in the right-sidebar panel. Poll for the provider's reply, then **Apply** or **Reject** any suggested patch.
+
+This works the same in Live Preview and source mode. In **Reading View** the rendered selection has no direct source offset, so the plugin re-locates the exact text in the Markdown source: if it matches exactly once the comment is anchored there; if it matches zero or multiple times you'll be asked to switch to Live Preview/source mode or select a longer, more unique passage. The plugin never silently anchors to one of several duplicate matches.
 
 ## Development
 
